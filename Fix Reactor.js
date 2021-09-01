@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Fix Reactor
-// @version      0.4.2
+// @version      0.4.4
 // @description  ...
 // @author       Borgulio
 // @include      *reactor.cc*
 // @include      *joyreactor.cc*
-// @require      https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js
+// @require      https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js
 // @grant        none
-// @run-at       document-start
+// @run-at       document-idle
 // ==/UserScript==
 
 (function() {
@@ -15,10 +15,22 @@
     let $ = window.jQuery;
 
     /* Changelog
+    0.4.4 (01.09.2021)      • Очередной раз вернул document-idle, нет идей как пофиксить ломающиеся длиннопосты самого реактора
+                              Закомментил addEventListener("DOMContentLoaded"
+                              Стили вернул в $("head").append вместо $("head").after
+                            • jQuery 3.5.1 -> 3.6.0
+                            • Небольшие правки CSS, убрал немного лишнего, обновил скрытие отступов до и после картинов в посте.
+                            • Добавил иконки на кнопки "подписаться\отписаться\заблокировать\разблокировать" в HideTagInfo(),
+                              в плане читаемости кода выглядит еще более отвратительно, чем раньше, просто кошмар.
+
+    0.4.3 (03.09.2020)      • В RemoveEmptySpace() добавил доп проверку else if так как увидел пустую строку в этом NSFW посте pokemon.reactor.cc/post/4489616
+                              Hotfix - объединил в одно общее условие, теперь поиск через lastIndexOf, а замена через substr
+                              Предыдущие условия пока оставил там же, добавил только false, чтобы не срабатывали
+
     0.4.2 (19.05.2020)      • Немного переделал AddScrollTopButton()
                             • Переделка анонимных функций в стрелочные и немного сжал код в некоторых местах, например RemoveShareButtons() и некоторые toggle.
                               Скорее всего это негативно скажется на читаемости, но пока кода мало и вроде как все понятно.
-                            • Хотелось бы избавиться от мигания при загрузке сайта. Для этого тестирую document-start вместо document-idle, соответственно стили в 
+                            • Хотелось бы избавиться от мигания при загрузке сайта. Для этого тестирую document-start вместо document-idle, соответственно стили в
                               AddNewCSS() теперь добавляются после head. Добавлен евент лисенер для всех основных функций.
                               Если будут проблемы(а раньше вроде были), то придется делать индивидуальную настройку каждой функции, либо откатываться назад.
 
@@ -63,7 +75,7 @@
     AddMainCss();
     AddHideCss();
 
-    document.addEventListener("DOMContentLoaded", () => {
+    //document.addEventListener("DOMContentLoaded", () => {
         RemoveEmptySpace(); /* remove empty space after pics.
         http://anime.reactor.cc/post/3968565
         http://anime.reactor.cc/post/3970379
@@ -80,7 +92,7 @@
         ChangeLinks();
         NextAndPreviousPageButtons(); //кнопки вперед-назад сверху страницы в #contentinner
         ColorMadness();
-    });
+    //});
 
 
     //========================== Functions ==========================//
@@ -156,22 +168,44 @@
         $('#brg_TagInfo').click( () => $('#tagArticle, #brg_TagFavouriteButtons').toggle(100) );
 
         //CREATE NEW SMALL BLOCK
-        $('#brg_TagInfo').after('<div id="brg_TagFavouriteButtons" style="border-bottom: 2px solid #FDDA97;"></div>');
+        $('#brg_TagInfo').after('<div id="brg_TagFavouriteButtons" style="border-bottom: 2px solid #FDDA97; overflow: hidden"></div>');
 
         //tag chain
-        $('#breadCrumb').find('div.sideheader.taginfo').clone().css({ 'margin-left':'5px' }).appendTo('#brg_TagFavouriteButtons');
+        $('#breadCrumb').find('div.sideheader.taginfo').clone().css({ 'margin-left':'5px', 'font-weight':'bold' }).appendTo('#brg_TagFavouriteButtons');
 
         //ADD TO FAV
-        $('#blogFavroiteLinks').find('.add_to_fav').clone().css({'float':'left','margin-left':'5px','margin-right':'15px','text-transform':'capitalize'}).appendTo('#brg_TagFavouriteButtons');
+        $('#blogFavroiteLinks').find('.add_to_fav').clone().css({'float':'left',
+                                                                 'margin':'2px 15px 2px 20px',
+                                                                 'text-transform':'capitalize'
+                                                                }).appendTo('#brg_TagFavouriteButtons')
+            .find('a').html('<p style="font-weight: bold; float: left; font-size: 35px; vertical-align: top; line-height: 18px; margin: 0;">+</p>подписаться');
 
         //REMOVE FROM FAV
-        $('#blogFavroiteLinks').find('.remove_from_fav').clone().css({ 'float':'left','margin-left':'5px','margin-right':'15px','text-transform':'capitalize' }).appendTo('#brg_TagFavouriteButtons');
+        $('#blogFavroiteLinks').find('.remove_from_fav').clone().css({'float':'left',
+                                                                      'margin':'2px 15px 2px 20px',
+                                                                      'text-transform':'capitalize'
+                                                                     }).appendTo('#brg_TagFavouriteButtons')
+            .find('a').css({'background': 'transparent url(http://js.reactor.cc/images/remove_icon_small.png) no-repeat 0 3px',
+                            'padding-left':'16px'
+                           });
 
         //BLOCK TAG
-        $('#blogFavroiteLinks').find('.add_to_unpopular').clone().css({ 'text-transform':'capitalize' }).appendTo('#brg_TagFavouriteButtons');
+        $('#blogFavroiteLinks').find('.add_to_unpopular').clone().css({'float':'left',
+                                                                       'margin':'2px 15px 2px 5px',
+                                                                       'text-transform':'capitalize',
+                                                                      }).appendTo('#brg_TagFavouriteButtons')
+            .find('a').css({'background': 'transparent url(http://js.reactor.cc/images/icon_lock.png) no-repeat 0 3px',
+                            'padding-left':'16px'
+                           });;
 
         //UNBLOCK TAG
-        $('#blogFavroiteLinks').find('.remove_from_unpopular').clone().css({ 'text-transform':'capitalize' }).appendTo('#brg_TagFavouriteButtons');
+        $('#blogFavroiteLinks').find('.remove_from_unpopular').clone().css({'float':'left',
+                                                                            'margin':'2px 15px 2px 5px',
+                                                                            'text-transform':'capitalize'
+                                                                           }).appendTo('#brg_TagFavouriteButtons')
+            .find('a').css({'background': 'transparent url(http://js.reactor.cc/images/icon_unlock.png) no-repeat 0 4px',
+                            'padding-left':'16px'
+                           });
     }
 
 
@@ -255,14 +289,31 @@
     function RemoveEmptySpace(){
         function checklast(obj){
             let last = $(obj).find(':last');
-            if ( $(obj).html().match(/&nbsp;$/) ){
+            if ( $(obj).html().match(/&nbsp;(<\/.{2,6}>)?$/) ){
+                let string = $(obj).html();
+                let index = string.lastIndexOf('&nbsp;');
+                let newString = string.substr(0, index) + string.substr(index + 6);
+                $(obj).html(newString);
+                console.log('nbsp removed');
+                checklast(obj);
+                return;
+            }
+            // СТАРЫЙ ВАРИАНТ
+            if ( false && $(obj).html().match(/&nbsp;$/) ){
                 let replaced_NBSP = $(obj).html().replace(/&nbsp;$/, '');
                 $(obj).html(replaced_NBSP);
                 checklast(obj);
                 return;
+            } else if ( false && $(obj).html().match(/&nbsp;<\//) ){
+                let replaced_NBSP = $(obj).html().replace(/&nbsp;<\//, '</');
+                $(obj).html(replaced_NBSP);
+                checklast(obj);
+                return;
             }
+            // СТАРЫЙ ВАРИАНТ END
             if ( $(last).is('br, p, span') && !$(last).text().length ){
                 $(last).remove();
+                console.log('empty tag removed');
                 checklast(obj);
                 return;
             }
@@ -272,7 +323,7 @@
 
 
     function AddNewCSS(NewCssId,NewCssText){
-        $("head").after('<style type="text/css" id="'+NewCssId+'">'+NewCssText+'</style>');
+        $("head").append('<style type="text/css" id="'+NewCssId+'">'+NewCssText+'</style>');
     }
 
 
@@ -355,39 +406,42 @@ border-bottom: 2px solid #FDDA97;
 margin-top: 3px;
 }
 
-/* Уменьшаем панель с датой, рейтом и кнопкой Комент */
-.article .ufoot .ufoot_first {
-zoom:80%;
-font-size:17px; /* Компенсируем увелицивая шрифт */
+/* Уменьшаем гигантскую кнопку КОММЕНТАРИИ под постом */
+.postContainer .ufoot .ufoot_first .comments {
+  zoom: 80%;
+}
+
+/* Убираем отступ перед кнопкой КОММЕНТАРИИ */
+.postContainer .ufoot{
+  margin-top: 0;
 }
 
 /* Убираем отступ после содержимого поста */
 .article .post_content {
-margin-bottom:0px;
+  margin-bottom: 0px;
 }
 
 /* Опускаем зеленое окошко с количеством новых постов */
 .commentnumDelta {
-top:0px;
+  top:0px;
 }
-/* Компенсируем увелицивая шрифт */
+/* Компенсируем увеличивая шрифт */
 .commentnum {
-font-size:17px;
+  font-size:17px;
 }
 
-/* Увеличиваем размер шрифта в коментах */
-.article .ufoot {
-font-size:16px;
+/* Убираем бесполезный отступ перед и после картинки в посте */
+.post_content div,
+.post_content .image,
+.post_content p {
+  padding: 0px 0 0;
+  margin: 0 0 0 0;
+  margin-top: 0px !important;
 }
 
-/* Убираем бесполезный отступ перед картинкой в посте */
-.post_content .image, .post_comment_list .image {
-padding: 0px 0 0;
-}
-
-/* Убираем какой-то рандомный отступ после картинки в посте */
-.post_content .image+p, .post_comment_list .image+p {
-padding: 0px 0 0;
+/* Убираем бесполезный отступ перед и после списка тэгов в посте */
+.postContainer .taglist{
+  margin: 0 0 0 0;
 }
 
 /* Кнопка "Вверх" */
